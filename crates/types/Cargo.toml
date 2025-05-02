@@ -1,0 +1,22 @@
+[package]
+name = "gramophone-types"
+description = "Discord voice API models for the `gramophone` crate"
+license = "ISC"
+version = "0.1.0"
+
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bitflags = "2.0"
+serde.workspace = true
+serde_json.workspace = true
+serde_repr.workspace = true
+twilight-model.workspace = true
+
+[dev-dependencies]
+serde_test = "1.0.177"
+static_assertions = "1.0"

@@ -1,0 +1,88 @@
+[workspace]
+default-members = ["."]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+authors = ["memothelemo <dev@memothelemo.xyz>"]
+edition = "2024"
+homepage = ""
+repository = "https://github.com/memothelemo/gramophone"
+rust-version = "1.85.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_repr = "0.1.20"
+twilight-model = "0.16.0"
+
+[package]
+name = "gramophone"
+description = "Alternative to songbird compatible with twilight"
+license = "MPL-2.0"
+version = "0.1.0"
+
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bench]]
+name = "crypto"
+harness = false
+
+[features]
+default = ["rustls-platform-verifier", "ring"]
+
+aws-lc-rs = ["aws_lc_rs"]
+aws_lc_rs = ["tokio-websockets/aws_lc_rs"]
+ring = ["tokio-websockets/ring", "dep:ring"]
+
+native-tls = ["tokio-websockets/native-tls", "tokio-websockets/openssl"]
+rustls-native-roots = ["tokio-websockets/rustls-native-roots"]
+rustls-platform-verifier = ["tokio-websockets/rustls-platform-verifier"]
+rustls-webpki-roots = ["tokio-websockets/rustls-webpki-roots"]
+
+[dependencies]
+gramophone-types = { path = "crates/types" }
+
+serde.workspace = true
+serde_json.workspace = true
+serde_repr.workspace = true
+twilight-model.workspace = true
+
+atomic = "0.5.3"
+dashmap = "6.1.0"
+discortp = { version = "0.6.0", features = ["discord"] }
+flume = "0.11.1"
+futures = "0.3.31"
+pin-project-lite = "0.2.16"
+tokio = { version = "1.44.2", features = ["full"] }
+tracing = "0.1.41"
+twilight-gateway = "0.16.0"
+
+# ring does not support 192-bit nonces for XChaChaPoly1035
+audiopus = { version = "0.2.0", features = ["encoder", "packet"] }
+chacha20poly1305 = "0.10.1"
+fastrand = "2.3.0"
+rubato = "0.16.2"
+symphonia = { version = "0.5.4", features = ["mp3"] }
+
+[dependencies.ring]
+version = "0.17.14"
+optional = true
+
+[dependencies.tokio-websockets]
+version = "0.11"
+features = ["client", "fastrand", "sha1_smol", "simd"]
+default-features = false
+
+[dev-dependencies]
+anyhow = "1.0.98"
+console-subscriber = "0.4.1"
+criterion = "0.5.1"
+dotenvy = "0.15.7"
+hex = "0.4.3"
+pretty_assertions = "1.4.1"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
