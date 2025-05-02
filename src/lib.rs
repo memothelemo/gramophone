@@ -14,7 +14,7 @@
 
 pub mod client;
 pub mod crypto;
-pub mod stream;
+pub mod mixer;
 
 /// This module provides composable voice-related objects and utilities
 /// for building customizable behavior.
