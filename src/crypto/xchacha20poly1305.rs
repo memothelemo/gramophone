@@ -15,15 +15,24 @@ impl Debug for XChaCha20Poly1035 {
 }
 
 impl XChaCha20Poly1035 {
+    // Clippy: It is already assumed that key.len() == AEAD_KEY_LEN
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn new(key: &[u8]) -> Option<Self> {
-        (key.len() == AEAD_KEY_LEN).then(|| Self::new_sized(&key.try_into().unwrap()))
+        (key.len() == AEAD_KEY_LEN).then(|| {
+            let key = key
+                .try_into()
+                .expect("key should have the size of AEAD_KEY_LEN");
+
+            Self::new_sized(key)
+        })
     }
 
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn new_sized(key: &[u8; AEAD_KEY_LEN]) -> Self {
         Self {
-            cipher: Cipher::new_from_slice(key).unwrap(),
+            cipher: Cipher::new_from_slice(key).expect("key should have the size of AEAD_KEY_LEN"),
         }
     }
 }
@@ -34,7 +43,6 @@ impl Aead for XChaCha20Poly1035 {
         super::EncryptMode::XChaCha20Poly1305
     }
 
-    #[must_use]
     fn encrypt(&self, nonce: &[u8], aad: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, AeadError> {
         if nonce.len() != NONCE_LEN {
             return Err(AeadError {
@@ -55,7 +63,6 @@ impl Aead for XChaCha20Poly1035 {
         Ok(buffer)
     }
 
-    #[must_use]
     fn decrypt(&self, nonce: &[u8], aad: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, AeadError> {
         if nonce.len() != NONCE_LEN {
             return Err(AeadError {
@@ -77,6 +84,7 @@ impl Aead for XChaCha20Poly1035 {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::{Aead, XChaCha20Poly1035};

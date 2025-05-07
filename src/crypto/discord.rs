@@ -5,9 +5,9 @@ use crate::crypto::{Aead, Aes256Gcm, XChaCha20Poly1035};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EncryptMode {
-    /// AEAD AES256-GCM (RTP Size) (Preferred)
+    /// AEAD `AES256-GCM` (RTP Size) (Preferred)
     Aes256Gcm,
-    /// AEAD XChaCha20 Poly1305 (RTP Size) (Required)
+    /// AEAD `XChaCha20` Poly1305 (RTP Size) (Required)
     XChaCha20Poly1305,
 }
 

@@ -47,9 +47,9 @@ impl CloseCode {
     }
 }
 
-impl Into<u16> for CloseCode {
-    fn into(self) -> u16 {
-        self as u16
+impl From<CloseCode> for u16 {
+    fn from(val: CloseCode) -> Self {
+        val as u16
     }
 }
 

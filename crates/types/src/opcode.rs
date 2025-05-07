@@ -56,9 +56,9 @@ impl OpCode {
     }
 }
 
-impl Into<u8> for OpCode {
-    fn into(self) -> u8 {
-        self as u8
+impl From<OpCode> for u8 {
+    fn from(val: OpCode) -> Self {
+        val as u8
     }
 }
 

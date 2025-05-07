@@ -7,6 +7,7 @@ use crate::OpCode;
 
 pub use self::speaking::{Speaking, SpeakingFlags};
 
+#[allow(clippy::wildcard_imports)]
 use self::incoming::*;
 use serde::Deserialize;
 use serde::de::value::U8Deserializer;

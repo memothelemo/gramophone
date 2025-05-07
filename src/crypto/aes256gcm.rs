@@ -19,16 +19,26 @@ impl Debug for Aes256Gcm {
 }
 
 impl Aes256Gcm {
+    // Clippy: It is already assumed that key.len() == AEAD_KEY_LEN
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn new(key: &[u8]) -> Option<Self> {
-        (key.len() == AEAD_KEY_LEN).then(|| Self::new_sized(&key.try_into().unwrap()))
+        (key.len() == AEAD_KEY_LEN).then(|| {
+            let key = key
+                .try_into()
+                .expect("key should have the size of AEAD_KEY_LEN");
+
+            Self::new_sized(key)
+        })
     }
 
+    // Clippy: AES_256_GCM.key_len == AEAD_KEY_LEN
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn new_sized(key: &[u8; AEAD_KEY_LEN]) -> Self {
         let key = UnboundKey::new(&AES_256_GCM, key)
             .map(LessSafeKey::new)
-            .unwrap();
+            .expect("should be valid key");
 
         Self { key }
     }
@@ -40,7 +50,6 @@ impl Aead for Aes256Gcm {
         super::EncryptMode::Aes256Gcm
     }
 
-    #[must_use]
     fn encrypt(&self, nonce: &[u8], aad: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, AeadError> {
         if nonce.len() != NONCE_LEN {
             return Err(AeadError {
@@ -53,7 +62,7 @@ impl Aead for Aes256Gcm {
         let mut ciphertext = plaintext.to_vec();
         self.key
             .seal_in_place_append_tag(
-                Nonce::assume_unique_for_key(nonce.try_into().unwrap()),
+                Nonce::assume_unique_for_key(nonce.try_into().expect("should be valid nonce")),
                 Aad::from(aad),
                 &mut ciphertext,
             )
@@ -64,7 +73,6 @@ impl Aead for Aes256Gcm {
         Ok(ciphertext)
     }
 
-    #[must_use]
     fn decrypt(&self, nonce: &[u8], aad: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>, AeadError> {
         if nonce.len() != NONCE_LEN {
             return Err(AeadError {
@@ -84,7 +92,7 @@ impl Aead for Aes256Gcm {
         let plaintext = self
             .key
             .open_in_place(
-                Nonce::assume_unique_for_key(nonce.try_into().unwrap()),
+                Nonce::assume_unique_for_key(nonce.try_into().expect("should be valid nonce")),
                 Aad::from(aad),
                 &mut buffer,
             )
@@ -99,6 +107,7 @@ impl Aead for Aes256Gcm {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::{Aead, Aes256Gcm};
