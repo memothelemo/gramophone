@@ -49,6 +49,10 @@ workspace = true
 name = "crypto"
 harness = false
 
+[[bench]]
+name = "websocket"
+harness = false
+
 [features]
 default = ["rustls-platform-verifier", "ring"]
 
@@ -102,4 +106,5 @@ criterion = "0.5.1"
 dotenvy = "0.15.7"
 hex = "0.4.3"
 pretty_assertions = "1.4.1"
+tracing-tree = "0.4.0"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

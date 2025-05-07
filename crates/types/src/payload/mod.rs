@@ -13,6 +13,7 @@ use serde::Deserialize;
 use serde::de::value::U8Deserializer;
 use serde::de::{DeserializeSeed, IgnoredAny, IntoDeserializer, MapAccess, Unexpected};
 use std::ops::Deref;
+use twilight_model::gateway::CloseFrame;
 use twilight_model::gateway::event::GatewayEventDeserializer;
 
 /// Any type of event that a voice connection emits.
@@ -20,10 +21,11 @@ use twilight_model::gateway::event::GatewayEventDeserializer;
 pub enum Event {
     ClientConnect(ClientConnect),
     ClientDisconnect(ClientDisconnect),
-    HeartbeatAck,
-    Hello(Hello),
-    Ready(Ready),
-    Resumed,
+    GatewayClosed(Option<CloseFrame<'static>>),
+    GatewayHeartbeatAck,
+    GatewayHello(Hello),
+    GatewayReady(Ready),
+    GatewayResumed,
     SessionDescription(SessionDescription),
     Speaking(Speaking),
 }
@@ -140,7 +142,7 @@ impl<'de> serde::de::Visitor<'de> for VoiceGatewayEventVisitor {
             OpCode::Ready => {
                 let data = Self::field::<Ready, _>(&mut map, Field::D)?;
                 Self::ignore_all(&mut map)?;
-                Event::Ready(data)
+                Event::GatewayReady(data)
             }
             OpCode::Heartbeat => {
                 return Err(serde::de::Error::unknown_field("Heartbeat", VALID_OPCODES));
@@ -157,17 +159,17 @@ impl<'de> serde::de::Visitor<'de> for VoiceGatewayEventVisitor {
             }
             OpCode::HeartbeatAck => {
                 Self::ignore_all(&mut map)?;
-                Event::HeartbeatAck
+                Event::GatewayHeartbeatAck
             }
             OpCode::Resume => return Err(serde::de::Error::unknown_field("Resume", VALID_OPCODES)),
             OpCode::Hello => {
                 let hello = Self::field::<Hello, _>(&mut map, Field::D)?;
                 Self::ignore_all(&mut map)?;
-                Event::Hello(hello)
+                Event::GatewayHello(hello)
             }
             OpCode::Resumed => {
                 Self::ignore_all(&mut map)?;
-                Event::Resumed
+                Event::GatewayResumed
             }
             OpCode::ClientConnect => {
                 let data = Self::field::<ClientConnect, _>(&mut map, Field::D)?;
