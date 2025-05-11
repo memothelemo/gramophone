@@ -1,4 +1,7 @@
+pub mod udp;
 pub mod websocket;
+
+pub use self::udp::VoiceUdp;
 pub use self::websocket::VoiceWebSocket;
 
 pub(crate) mod internal {

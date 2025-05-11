@@ -87,6 +87,44 @@ impl VoiceWebSocketState {
     }
 }
 
+/// This struct provides to meet the primitive requirements of handling Discord's
+/// WebSocket voice gateway such as heartbeats. It can also receive incoming events
+/// through [`event streaming`] inspired from [`twilight-rs`] and outgoing messages
+/// with [`send(...)`] method.
+///
+/// However, this struct does not provide any implementation of authentication, session
+/// resumption nor holding any additional useful states other than retaining connection
+/// itself as this is foundation for the [`VoiceConnection`] struct and this allows
+/// users to customize the behavior of this struct based on their specific requirements
+/// but it has to be identified to the Discord before sending any events.
+///
+/// Discord will close the connection if it tries to sent events without being
+/// identified to them.
+///
+/// # Usage
+///
+/// ```rs,no-run
+/// # use gramophone::net::VoiceWebSocket;
+/// use futures::StreamExt;
+/// use gramophone::net::VoiceWebSocketEvent;
+/// use tracing::warn;
+///
+/// let mut ws = VoiceWebSocket::new("discord.gg".to_string());
+/// while let Some(event) = ws.next().await {
+///     let event = match event {
+///         Ok(event) => event,
+///         Err(error) => {
+///             warn!(?error, "got error");
+///             continue;
+///         },
+///     };
+///     ...
+/// }
+/// ```
+///
+/// [`send(...)`]: VoiceWebSocket::send
+/// [`event streaming`]: futures::StreamExt
+/// [`twilight-rs`]: https://github.com/twilight-rs/twilight
 #[derive(Debug)]
 pub struct VoiceWebSocket {
     /// WebSocket connection, which may be connected to Discord's voice gateway.
@@ -109,6 +147,10 @@ pub struct VoiceWebSocket {
     /// This allows to keep track of heartbeats during the lifetime
     /// of the voice gateway connection.
     heartbeater: Option<Heartbeater>,
+
+    /// Determines whether the message channels are created automatically
+    /// by the [`VoiceWebSocket`] from stream polling function.
+    message_channels_native: bool,
 
     /// Channel to send incoming messages that need to be
     /// sent to the voice gateway.
@@ -135,6 +177,10 @@ pub struct VoiceWebSocket {
 
     /// Current state of a [`VoiceWebSocket`]
     state: VoiceWebSocketState,
+
+    /// Internal value that tells whether connecting to the
+    /// WebSocket with TLS is enabled.
+    use_tls: bool,
 }
 
 impl VoiceWebSocket {
@@ -147,12 +193,14 @@ impl VoiceWebSocket {
             gracefully_disconnected: true,
             future: None,
             heartbeater: None,
+            message_channels_native: true,
             message_tx: None,
             message_rx: None,
             pending: None,
             reconnect: None,
             reconnected: None,
             state: VoiceWebSocketState::Disconnected,
+            use_tls: true,
         }
     }
 
@@ -177,6 +225,40 @@ impl VoiceWebSocket {
         self.heartbeater.as_ref()
     }
 
+    /// Initializes an [MPSC sender channel] for sending messages to the voice gateway, useful
+    /// when implementing custom logic for dealing with Discord's Voice API, especially when
+    /// sending WebSocket messages from a separate thread is not feasible.
+    ///
+    /// ```no_run
+    /// # use gramophone::net::VoiceWebSocket;
+    ///
+    /// let mut ws = VoiceWebSocket::new("wss://example.endpoint".to_string());
+    /// let sender = ws.init_message_channels();
+    /// tokio::spawn(async move {
+    ///     // ...
+    ///     sender.send("sample txt".to_string()).unwrap();
+    /// });
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the message channel is already initialized either cases:
+    /// - When `.next(...)` from [`StreamExt::next`] is called from [`VoiceWebSocket`]
+    /// - [`VoiceWebSocket::init_message_channels`] is called before.
+    ///
+    /// [MPSC sender channel]: mpsc::UnboundedSender
+    pub fn init_message_channels(&mut self) -> mpsc::UnboundedSender<String> {
+        assert!(
+            self.message_tx.is_none(),
+            "Already initialized message channel"
+        );
+        let (tx, rx) = mpsc::unbounded_channel();
+        self.message_channels_native = false;
+        self.message_rx = Some(Wrapper(rx));
+        self.message_tx = Some(Wrapper(tx.clone()));
+        tx
+    }
+
     /// Queues to restart the WebSocket connection to the voice gateway with
     /// a new endpoint if it is `Some`.
     pub fn reconnect(&mut self, endpoint: String) {
@@ -196,12 +278,12 @@ impl VoiceWebSocket {
     #[allow(clippy::missing_panics_doc)]
     pub fn send<T: serde::Serialize>(&mut self, payload: &T) {
         let event = serde_json::to_string(payload).expect("should serialize");
-        self.load_pending_channels();
+        self.load_message_channels();
         self.message_tx
             .as_ref()
             .expect("message_tx should be initialized")
             .send(event)
-            .expect("VoiceWebSocket owns channel");
+            .expect("VoiceWebSocket owns message_rx");
     }
 
     /// Gets the current state of [`VoiceWebSocket`].
@@ -212,17 +294,8 @@ impl VoiceWebSocket {
 }
 
 impl VoiceWebSocket {
-    /// Initializes `message_tx` and `message_rx` but it returns `message_tx`
-    /// so it can communicate to the user.
-    pub(crate) fn init_pending_channels(&mut self) -> mpsc::UnboundedSender<String> {
-        let (tx, rx) = mpsc::unbounded_channel();
-        self.message_rx = Some(Wrapper(rx));
-        self.message_tx = Some(Wrapper(tx.clone()));
-        tx
-    }
-
     /// Initializes `message_tx` and `message_rx` if it is not defined yet.
-    fn load_pending_channels(&mut self) {
+    fn load_message_channels(&mut self) {
         if self.message_tx.is_none() || self.message_rx.is_none() {
             let (tx, rx) = mpsc::unbounded_channel();
             self.message_rx = Some(Wrapper(rx));
@@ -463,8 +536,9 @@ impl VoiceWebSocket {
 
                 if self.future.is_none() {
                     let attempts = self.connect_attempts;
+                    let protocol = if self.use_tls { "wss" } else { "ws" };
                     let url = format!(
-                        "wss://{}/?v={}",
+                        "{protocol}://{}/?v={}",
                         self.endpoint,
                         gramophone_types::API_VERSION
                     );
@@ -531,11 +605,11 @@ impl futures::Stream for VoiceWebSocket {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         trace!("poll next start");
         if self.message_rx.is_none() {
-            self.load_pending_channels();
+            self.load_message_channels();
         }
 
         let message = loop {
-            trace!("acquiring ws message");
+            trace!("polling self.poll_ws_connect");
             match ready!(self.poll_ws_connect(cx)) {
                 Ok(false) => return Poll::Ready(None),
                 Ok(true) => {}

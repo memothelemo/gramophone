@@ -1,8 +1,5 @@
 use anyhow::{Context as _, Result};
-use pin_project_lite::pin_project;
-use std::pin::Pin;
 use std::str::FromStr;
-use std::task::{Context, Poll};
 use tracing::warn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{EnvFilter, Layer};
@@ -33,11 +30,16 @@ pub fn init_tracing() -> Result<()> {
     Ok(())
 }
 
+#[allow(unused)]
 pub fn parse_id_from_env<T>(env: &'static str) -> Result<Id<T>> {
     let content = dotenvy::var(env)?;
     Id::<T>::from_str(&content)
         .with_context(|| format!("could not parse Discord snowflake of {env:?}"))
 }
+
+use pin_project_lite::pin_project;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 pin_project! {
     /// This type runs the future if it exists and returns the value
@@ -56,6 +58,7 @@ pin_project! {
 pub trait OptionalExt {
     type Future: Future;
 
+    #[allow(unused)]
     fn optional(self) -> Optional<Self::Future>;
 }
 

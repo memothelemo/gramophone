@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use dotenvy::dotenv;
 use futures::StreamExt as _;
 use serde_json::json;
 use tokio::sync::mpsc;
@@ -22,8 +21,6 @@ use self::common::{OptionalExt, init_tracing, parse_id_from_env};
 #[allow(clippy::too_many_lines)]
 #[tokio::main]
 async fn main() -> Result<()> {
-    let _ = dotenv().ok();
-
     let token = dotenvy::var("TOKEN").context("Missing `TOKEN` environment variable")?;
     let guild_id = parse_id_from_env::<GuildMarker>("GUILD_ID")?;
     let channel_id = parse_id_from_env::<ChannelMarker>("CHANNEL_ID")?;

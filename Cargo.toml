@@ -73,10 +73,9 @@ serde_json.workspace = true
 serde_repr.workspace = true
 twilight-model.workspace = true
 
-atomic = "0.5.3"
 dashmap = "6.1.0"
 discortp = { version = "0.6.0", features = ["discord"] }
-flume = "0.11.1"
+flume = { version = "0.11.1", features = ["async"] }
 futures = "0.3.31"
 pin-project-lite = "0.2.16"
 tokio = { version = "1.44.2", features = ["full"] }
