@@ -54,11 +54,11 @@ impl From<CloseCode> for u16 {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct CloseCodeConversionError {
+pub struct CloseCodeConvertError {
     code: u16,
 }
 
-impl CloseCodeConversionError {
+impl CloseCodeConvertError {
     #[must_use]
     const fn new(code: u16) -> Self {
         Self { code }
@@ -70,17 +70,17 @@ impl CloseCodeConversionError {
     }
 }
 
-impl Display for CloseCodeConversionError {
+impl Display for CloseCodeConvertError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.code, f)?;
         f.write_str(" is not a valid close code")
     }
 }
 
-impl Error for CloseCodeConversionError {}
+impl Error for CloseCodeConvertError {}
 
 impl TryFrom<u16> for CloseCode {
-    type Error = CloseCodeConversionError;
+    type Error = CloseCodeConvertError;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
         let close_code = match value {
@@ -96,7 +96,7 @@ impl TryFrom<u16> for CloseCode {
             4014 => Self::Disconnected,
             4015 => Self::VoiceServerCrashed,
             4016 => Self::UnknownEncryptionMode,
-            _ => return Err(CloseCodeConversionError::new(value)),
+            _ => return Err(CloseCodeConvertError::new(value)),
         };
 
         Ok(close_code)
@@ -121,5 +121,6 @@ mod tests {
         Serialize,
         Sync,
     );
-    assert_impl_all!(CloseCodeConversionError: Debug, PartialEq, Eq, Send, Sync, Error);
+
+    assert_impl_all!(CloseCodeConvertError: Debug, PartialEq, Eq, Send, Sync, Error);
 }

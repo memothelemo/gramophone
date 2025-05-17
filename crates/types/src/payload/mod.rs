@@ -1,20 +1,17 @@
-mod speaking;
-
+pub mod command;
 pub mod incoming;
 pub mod outgoing;
 
-use crate::OpCode;
-
-pub use self::speaking::{Speaking, SpeakingFlags};
-
-#[allow(clippy::wildcard_imports)]
-use self::incoming::*;
 use serde::Deserialize;
 use serde::de::value::U8Deserializer;
 use serde::de::{DeserializeSeed, IgnoredAny, IntoDeserializer, MapAccess, Unexpected};
-use std::ops::Deref;
+
 use twilight_model::gateway::CloseFrame;
 use twilight_model::gateway::event::GatewayEventDeserializer;
+
+use self::command::Speaking;
+use self::incoming::*;
+use crate::OpCode;
 
 /// Any type of event that a voice connection emits.
 #[derive(Clone, Debug, PartialEq)]
@@ -46,7 +43,7 @@ impl<'a> VoiceGatewayEventDeserializer<'a> {
     }
 }
 
-impl<'a> Deref for VoiceGatewayEventDeserializer<'a> {
+impl<'a> std::ops::Deref for VoiceGatewayEventDeserializer<'a> {
     type Target = GatewayEventDeserializer<'a>;
 
     fn deref(&self) -> &Self::Target {
