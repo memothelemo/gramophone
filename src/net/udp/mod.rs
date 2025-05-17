@@ -41,7 +41,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 ///
 /// [Symphonia]: symphonia
 /// [`VoiceWebSocket`]: crate::net::VoiceWebSocket
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct VoiceUdp {
     keep_alive_counter: Arc<AtomicU32>,
     socket: Option<Arc<UdpSocket>>,
@@ -86,7 +86,7 @@ impl VoiceUdp {
     pub async fn connect_async(&mut self, ip: IpAddr, port: u16) -> Result<(), VoiceUdpError> {
         use tokio::net::UdpSocket as TokioUdpSocket;
 
-        let socket = TokioUdpSocket::bind("0.0.0.0")
+        let socket = TokioUdpSocket::bind("0.0.0.0:0")
             .await
             .map_err(|source| VoiceUdpError {
                 kind: VoiceUdpErrorType::Connect,

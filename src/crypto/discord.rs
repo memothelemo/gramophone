@@ -13,7 +13,7 @@ pub enum EncryptMode {
 
 impl EncryptMode {
     #[must_use]
-    pub fn encryptor(&self, key: &[u8; RTP_KEY_LEN]) -> Box<dyn Aead> {
+    pub fn aead(&self, key: &[u8; RTP_KEY_LEN]) -> Box<dyn Aead> {
         match self {
             Self::Aes256Gcm => Box::new(Aes256Gcm::new_sized(key)),
             Self::XChaCha20Poly1305 => Box::new(XChaCha20Poly1035::new_sized(key)),

@@ -348,6 +348,11 @@ impl VoiceWebSocket {
                 self.heartbeater = Some(Heartbeater::new(interval));
             }
             OpCode::Ready | OpCode::Resumed => {
+                if matches!(opcode, OpCode::Ready) {
+                    debug!("received ready gateway event");
+                } else {
+                    debug!("received resumed gateway event");
+                }
                 self.reconnected = None;
             }
             OpCode::HeartbeatAck => {
@@ -600,9 +605,13 @@ impl futures::Stream for VoiceWebSocket {
     #[tracing::instrument(skip_all, name = "ws.poll", fields(
         endpoint = ?self.endpoint,
         latency = ?self.heartbeater.as_ref().and_then(Heartbeater::recent),
-        state = ?self.state,
     ))]
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            let span = tracing::Span::current();
+            span.record("state", tracing::field::debug(&self.state));
+        }
+
         trace!("poll next start");
         if self.message_rx.is_none() {
             self.load_message_channels();
@@ -681,8 +690,6 @@ impl futures::Stream for VoiceWebSocket {
                 let Some(opcode) = self.parse_opcode(&event)? else {
                     return Poll::Pending;
                 };
-                debug!("received voice gateway event");
-
                 let event = self.process_event(opcode, &event)?;
                 Poll::Ready(Some(Ok(event)))
             }

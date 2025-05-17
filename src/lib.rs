@@ -1,3 +1,5 @@
+pub mod client;
+
 pub mod crypto;
 
 /// This module provides composable voice-related objects and utilities

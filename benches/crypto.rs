@@ -19,7 +19,7 @@ fn encrypt_bytes(c: &mut Criterion) {
         let mut nonce = vec![0u8; mode.nonce_size()];
         fastrand::fill(&mut nonce);
 
-        let aead = mode.encryptor(&key);
+        let aead = mode.aead(&key);
         for plaintext in texts {
             let bench_name = format!(
                 "encrypt {} (p: {} bytes)",
@@ -39,7 +39,7 @@ fn encrypt_bytes(c: &mut Criterion) {
         let mut nonce = vec![0u8; mode.nonce_size()];
         fastrand::fill(&mut nonce);
 
-        let aead = mode.encryptor(&key);
+        let aead = mode.aead(&key);
         for plaintext in texts {
             let bench_name = format!(
                 "decrypt {} (p: {} bytes)",
