@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::{borrow::Cow, collections::VecDeque};
 use tokio::time::{Instant, Interval, MissedTickBehavior, interval_at};
 
-pub struct Heartbeater {
+pub(crate) struct Heartbeater {
     /// Interval of how often the client must send heartbeats.
     pub(crate) interval: Interval,
 
@@ -38,18 +38,6 @@ impl Heartbeater {
     pub fn info(&self) -> HeartbeatInfo<'_> {
         HeartbeatInfo {
             latencies: Cow::Borrowed(&self.latencies),
-        }
-    }
-
-    /// Gets a referenced simplified context of [`Heartbeater`]
-    /// with [`HeartbeatInfo`] type.
-    ///
-    /// Unlike [`Heartbeater::info`], it will clone the entire list of
-    /// latencies and returns a static reference of [`HeartbeatInfo`].
-    #[must_use]
-    pub fn info_owned(&self) -> HeartbeatInfo<'static> {
-        HeartbeatInfo {
-            latencies: Cow::Owned(self.latencies.to_owned()),
         }
     }
 
