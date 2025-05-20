@@ -1,6 +1,8 @@
-pub mod command;
 pub mod incoming;
 pub mod outgoing;
+pub mod speaking;
+
+pub use self::speaking::Speaking;
 
 use serde::Deserialize;
 use serde::de::value::U8Deserializer;
@@ -9,7 +11,6 @@ use serde::de::{DeserializeSeed, IgnoredAny, IntoDeserializer, MapAccess, Unexpe
 use twilight_model::gateway::CloseFrame;
 use twilight_model::gateway::event::GatewayEventDeserializer;
 
-use self::command::Speaking;
 use self::incoming::*;
 use crate::OpCode;
 

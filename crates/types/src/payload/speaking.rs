@@ -2,8 +2,6 @@ use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 use twilight_model::id::{Id, marker::UserMarker};
 
-use super::{Command, Sealed};
-
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Hash, Serialize)]
 pub struct Speaking {
     pub user_id: Id<UserMarker>,
@@ -19,9 +17,6 @@ bitflags! {
         const PRIORITY = 1 << 2;
     }
 }
-
-impl Command for Speaking {}
-impl Sealed for Speaking {}
 
 impl<'de> Deserialize<'de> for SpeakingFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

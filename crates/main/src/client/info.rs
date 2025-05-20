@@ -13,7 +13,7 @@ use twilight_model::id::marker::{GuildMarker, UserMarker};
 /// [`Voice Server Update`]: https://discord.com/developers/docs/events/gateway-events#voice-server-update
 /// [`Update Voice State`]: https://discord.com/developers/docs/events/gateway-events#update-voice-state
 #[derive(Debug, Clone)]
-pub struct ConnectionInfo {
+pub struct VoiceConnectionInfo {
     pub endpoint: String,
     pub guild_id: Id<GuildMarker>,
     pub session_id: String,
@@ -21,14 +21,14 @@ pub struct ConnectionInfo {
     pub user_id: Id<UserMarker>,
 }
 
-impl ConnectionInfo {
+impl VoiceConnectionInfo {
     #[must_use]
-    pub const fn builder() -> ConnectionInfoBuilder {
-        ConnectionInfoBuilder::new()
+    pub const fn builder() -> VoiceConnectionInfoBuilder {
+        VoiceConnectionInfoBuilder::new()
     }
 }
 
-pub struct ConnectionInfoBuilder<E = (), G = (), S = (), T = (), U = ()> {
+pub struct VoiceConnectionInfoBuilder<E = (), G = (), S = (), T = (), U = ()> {
     endpoint: Option<String>,
     guild_id: Option<Id<GuildMarker>>,
     session_id: Option<String>,
@@ -37,7 +37,7 @@ pub struct ConnectionInfoBuilder<E = (), G = (), S = (), T = (), U = ()> {
     phantom: PhantomData<(E, G, S, T, U)>,
 }
 
-impl ConnectionInfoBuilder {
+impl VoiceConnectionInfoBuilder {
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -79,8 +79,8 @@ impl std::fmt::Debug for Token {
     }
 }
 
-mod builder_state {
-    use super::{ConnectionInfo, ConnectionInfoBuilder, Token};
+mod builder {
+    use super::{Token, VoiceConnectionInfo, VoiceConnectionInfoBuilder};
 
     use std::marker::PhantomData;
     use std::num::NonZeroU64;
@@ -94,26 +94,26 @@ mod builder_state {
     pub struct WithUserId;
     pub struct Optional;
 
-    impl ConnectionInfoBuilder {
+    impl<E, G, S, T, U> VoiceConnectionInfoBuilder<E, G, S, T, U> {
         #[must_use]
         pub fn optional(
             self,
-        ) -> ConnectionInfoBuilder<Optional, Optional, Optional, Optional, Optional> {
-            ConnectionInfoBuilder {
-                endpoint: None,
-                guild_id: None,
-                session_id: None,
-                token: None,
-                user_id: None,
+        ) -> VoiceConnectionInfoBuilder<Optional, Optional, Optional, Optional, Optional> {
+            VoiceConnectionInfoBuilder {
+                endpoint: self.endpoint,
+                guild_id: self.guild_id,
+                session_id: self.session_id,
+                token: self.token,
+                user_id: self.user_id,
                 phantom: PhantomData,
             }
         }
     }
 
-    impl ConnectionInfoBuilder<Optional, Optional, Optional, Optional, Optional> {
+    impl VoiceConnectionInfoBuilder<Optional, Optional, Optional, Optional, Optional> {
         #[must_use]
         pub fn clear(self) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 endpoint: None,
                 guild_id: None,
                 session_id: None,
@@ -125,7 +125,7 @@ mod builder_state {
 
         #[must_use]
         pub fn set_endpoint(self, endpoint: impl Into<String>) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 endpoint: Some(endpoint.into()),
                 ..self
             }
@@ -133,7 +133,7 @@ mod builder_state {
 
         #[must_use]
         pub fn set_guild_id(self, guild_id: Id<GuildMarker>) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 guild_id: Some(guild_id),
                 ..self
             }
@@ -141,7 +141,7 @@ mod builder_state {
 
         #[must_use]
         pub fn set_session_id(self, session_id: impl Into<String>) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 session_id: Some(session_id.into()),
                 ..self
             }
@@ -149,7 +149,7 @@ mod builder_state {
 
         #[must_use]
         pub fn set_token(self, token: impl Into<String>) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 token: Some(token.into()),
                 ..self
             }
@@ -157,28 +157,28 @@ mod builder_state {
 
         #[must_use]
         pub fn set_user_id(self, user_id: Id<UserMarker>) -> Self {
-            ConnectionInfoBuilder {
+            VoiceConnectionInfoBuilder {
                 user_id: Some(user_id),
                 ..self
             }
         }
 
         #[must_use]
-        pub fn build_optional(&self) -> Option<ConnectionInfo> {
-            Some(ConnectionInfo {
+        pub fn build_optional(&self) -> Option<VoiceConnectionInfo> {
+            Some(VoiceConnectionInfo {
                 endpoint: self.endpoint.clone()?,
                 guild_id: self.guild_id.clone()?,
-                session_id: self.session_id.clone().unwrap(),
-                token: Token::new(self.token.clone().unwrap().into_boxed_str()),
-                user_id: self.user_id.clone().unwrap(),
+                session_id: self.session_id.clone()?,
+                token: Token::new(self.token.clone()?.into_boxed_str()),
+                user_id: self.user_id.clone()?,
             })
         }
     }
 
-    impl ConnectionInfoBuilder<WithEndpoint, WithGuildId, WithSessionId, WithToken, WithUserId> {
+    impl VoiceConnectionInfoBuilder<WithEndpoint, WithGuildId, WithSessionId, WithToken, WithUserId> {
         #[must_use]
-        pub fn build(self) -> ConnectionInfo {
-            ConnectionInfo {
+        pub fn build(self) -> VoiceConnectionInfo {
+            VoiceConnectionInfo {
                 endpoint: self.endpoint.unwrap(),
                 guild_id: self.guild_id.unwrap(),
                 session_id: self.session_id.unwrap(),
@@ -188,13 +188,13 @@ mod builder_state {
         }
     }
 
-    impl<G, S, T, U> ConnectionInfoBuilder<(), G, S, T, U> {
+    impl<G, S, T, U> VoiceConnectionInfoBuilder<(), G, S, T, U> {
         #[must_use]
         pub fn endpoint(
             self,
             endpoint: impl Into<String>,
-        ) -> ConnectionInfoBuilder<WithEndpoint, S, T, U> {
-            ConnectionInfoBuilder {
+        ) -> VoiceConnectionInfoBuilder<WithEndpoint, S, T, U> {
+            VoiceConnectionInfoBuilder {
                 endpoint: Some(endpoint.into()),
                 guild_id: self.guild_id,
                 session_id: self.session_id,
@@ -205,13 +205,13 @@ mod builder_state {
         }
     }
 
-    impl<E, S, T, U> ConnectionInfoBuilder<E, (), S, T, U> {
+    impl<E, S, T, U> VoiceConnectionInfoBuilder<E, (), S, T, U> {
         #[must_use]
         pub fn guild_id(
             self,
             guild_id: Id<GuildMarker>,
-        ) -> ConnectionInfoBuilder<E, WithGuildId, S, T, U> {
-            ConnectionInfoBuilder {
+        ) -> VoiceConnectionInfoBuilder<E, WithGuildId, S, T, U> {
+            VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
                 guild_id: Some(guild_id),
                 session_id: self.session_id,
@@ -225,9 +225,9 @@ mod builder_state {
         pub fn try_guild_id(
             self,
             guild_id: u64,
-        ) -> Option<ConnectionInfoBuilder<E, WithGuildId, S, T, U>> {
+        ) -> Option<VoiceConnectionInfoBuilder<E, WithGuildId, S, T, U>> {
             let guild_id = NonZeroU64::new(guild_id)?;
-            Some(ConnectionInfoBuilder {
+            Some(VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
                 guild_id: Some(guild_id.into()),
                 session_id: self.session_id,
@@ -238,13 +238,13 @@ mod builder_state {
         }
     }
 
-    impl<E, G, T, U> ConnectionInfoBuilder<E, G, (), T, U> {
+    impl<E, G, T, U> VoiceConnectionInfoBuilder<E, G, (), T, U> {
         #[must_use]
         pub fn session_id(
             self,
             session: impl Into<String>,
-        ) -> ConnectionInfoBuilder<E, G, WithSessionId, T, U> {
-            ConnectionInfoBuilder {
+        ) -> VoiceConnectionInfoBuilder<E, G, WithSessionId, T, U> {
+            VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
                 guild_id: self.guild_id,
                 session_id: Some(session.into()),
@@ -255,13 +255,13 @@ mod builder_state {
         }
     }
 
-    impl<E, G, S, U> ConnectionInfoBuilder<E, G, S, (), U> {
+    impl<E, G, S, U> VoiceConnectionInfoBuilder<E, G, S, (), U> {
         #[must_use]
         pub fn token(
             self,
             token: impl Into<String>,
-        ) -> ConnectionInfoBuilder<E, G, S, WithToken, U> {
-            ConnectionInfoBuilder {
+        ) -> VoiceConnectionInfoBuilder<E, G, S, WithToken, U> {
+            VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
                 guild_id: self.guild_id,
                 session_id: self.session_id,
@@ -272,18 +272,18 @@ mod builder_state {
         }
     }
 
-    impl<E, G, S, T> ConnectionInfoBuilder<E, G, S, T, ()> {
+    impl<E, G, S, T> VoiceConnectionInfoBuilder<E, G, S, T, ()> {
         #[must_use]
         pub fn user_id(
             self,
-            user_id: Id<GuildMarker>,
-        ) -> ConnectionInfoBuilder<E, G, S, T, WithUserId> {
-            ConnectionInfoBuilder {
+            user_id: Id<UserMarker>,
+        ) -> VoiceConnectionInfoBuilder<E, G, S, T, WithUserId> {
+            VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
-                guild_id: Some(user_id),
+                guild_id: self.guild_id,
                 session_id: self.session_id,
                 token: self.token,
-                user_id: self.user_id,
+                user_id: Some(user_id),
                 phantom: PhantomData,
             }
         }
@@ -292,9 +292,9 @@ mod builder_state {
         pub fn try_user_id(
             self,
             user_id: u64,
-        ) -> Option<ConnectionInfoBuilder<E, G, S, T, WithUserId>> {
+        ) -> Option<VoiceConnectionInfoBuilder<E, G, S, T, WithUserId>> {
             let user_id = NonZeroU64::new(user_id)?;
-            Some(ConnectionInfoBuilder {
+            Some(VoiceConnectionInfoBuilder {
                 endpoint: self.endpoint,
                 guild_id: self.guild_id,
                 session_id: self.session_id,

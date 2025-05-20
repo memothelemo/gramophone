@@ -2,26 +2,29 @@ use std::error::Error;
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub struct VoiceWebSocketError {
-    pub(crate) kind: VoiceWebSocketErrorType,
+pub struct VoiceClientError {
+    pub(crate) kind: VoiceClientErrorType,
     pub(crate) source: Option<Box<dyn Error + Send + Sync>>,
 }
 
-impl VoiceWebSocketError {
+impl VoiceClientError {
     #[must_use]
-    pub fn kind(&self) -> &VoiceWebSocketErrorType {
+    pub fn kind(&self) -> &VoiceClientErrorType {
         &self.kind
     }
 }
 
-impl Display for VoiceWebSocketError {
+impl Display for VoiceClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.kind {
-            VoiceWebSocketErrorType::Deserializing { event } => {
+            VoiceClientErrorType::Handshaking => {
+                f.write_str("could not handshake voice UDP connection")
+            }
+            VoiceClientErrorType::Deserializing { event } => {
                 f.write_str("voice gateway event could not be deserialized: event=")?;
                 f.write_str(event)
             }
-            VoiceWebSocketErrorType::WebSocket => {
+            VoiceClientErrorType::Reconnect => {
                 let source = self
                     .source
                     .as_ref()
@@ -29,11 +32,12 @@ impl Display for VoiceWebSocketError {
 
                 Display::fmt(source, f)
             }
+            VoiceClientErrorType::UnsupportedMode => f.write_str("unsupported encryption mode"),
         }
     }
 }
 
-impl Error for VoiceWebSocketError {
+impl Error for VoiceClientError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.source
             .as_ref()
@@ -42,9 +46,15 @@ impl Error for VoiceWebSocketError {
 }
 
 #[derive(Debug)]
-pub enum VoiceWebSocketErrorType {
-    /// WebSocket error.
-    WebSocket,
+pub enum VoiceClientErrorType {
+    /// Found undefined encryption mode.
+    UnsupportedMode,
+
+    /// Could not handshake a voice server.
+    Handshaking,
+
+    /// Could not reconnect to the voice gateway.
+    Reconnect,
 
     /// Voice gateway event could not be deserialized.
     Deserializing { event: String },

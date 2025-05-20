@@ -9,7 +9,50 @@ homepage.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+default = ["rustls-platform-verifier", "ring"]
+
+aws-lc-rs = ["aws_lc_rs"]
+aws_lc_rs = ["tokio-websockets/aws_lc_rs"]
+ring = ["tokio-websockets/ring", "dep:ring"]
+
+native-tls = ["tokio-websockets/native-tls", "tokio-websockets/openssl"]
+rustls-native-roots = ["tokio-websockets/rustls-native-roots"]
+rustls-platform-verifier = ["tokio-websockets/rustls-platform-verifier"]
+rustls-webpki-roots = ["tokio-websockets/rustls-webpki-roots"]
+
 [dependencies]
+gramophone-types = { path = "../types" }
+serde.workspace = true
+serde_json.workspace = true
+twilight-model.workspace = true
+
+flume = "0.11.1"
+tokio = { version = "1.45.0", features = ["macros", "net", "rt", "sync", "time"] }
+futures = "0.3.31"
+tracing = "0.1.41"
+twilight-gateway = "0.16.0"
+discortp = { version = "0.6.0", features = ["discord"] }
+
+[dependencies.ring]
+version = "0.17.14"
+optional = true
+
+[dependencies.tokio-websockets]
+version = "0.11"
+features = ["client", "fastrand", "sha1_smol", "simd"]
+default-features = false
+
+[dev-dependencies]
+anyhow = "1.0.98"
+console-subscriber = "0.4.1"
+dotenvy = "0.15.7"
+hex = "0.4.3"
+pin-project-lite = "0.2.16"
+pretty_assertions = "1.4.1"
+tokio = { version = "*", features = ["full"] }
+tracing-tree = "0.4.0"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [lints]
 workspace = true

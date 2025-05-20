@@ -1,11 +1,10 @@
 use anyhow::{Context, Result};
 use futures::StreamExt;
+use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
-use gramophone::client::{ConnectionInfoBuilder, VoiceClient, VoiceClientEvent};
-
-use std::time::Duration;
+use gramophone::client::{VoiceClient, VoiceConnectionInfo};
 
 use twilight_gateway::{CloseFrame, EventTypeFlags, Intents, Shard, ShardId, StreamExt as _};
 use twilight_model::gateway::event::Event as GatewayEvent;
@@ -31,10 +30,10 @@ async fn main() -> Result<()> {
         Intents::GUILDS | Intents::GUILD_VOICE_STATES,
     );
 
-    let mut info = ConnectionInfoBuilder::new()
-        .optional()
-        .set_guild_id(guild_id)
-        .set_user_id(user_id);
+    let mut info = VoiceConnectionInfo::builder()
+        .guild_id(guild_id)
+        .user_id(user_id)
+        .optional();
 
     loop {
         tokio::select! {
@@ -46,9 +45,9 @@ async fn main() -> Result<()> {
                 shard.close(CloseFrame::NORMAL);
                 break;
             },
-            event = client.as_mut().map(|v| v.next()).optional() => {
-                let event = match event {
-                    Some(Ok(event)) => event,
+            message = client.as_mut().map(|v| v.next()).optional() => {
+                let message = match message {
+                    Some(Ok(message)) => message,
                     Some(Err(error)) => {
                         warn!(?error, "voice client: got an error");
                         continue;
@@ -59,17 +58,7 @@ async fn main() -> Result<()> {
                         break;
                     }
                 };
-                info!(?event, "voice client: received event");
-
-                match event {
-                    VoiceClientEvent::Event(event) => {
-
-                    },
-                    VoiceClientEvent::Reconnecting => todo!(),
-                    VoiceClientEvent::Connected(info) =>{
-
-                    },
-                }
+                info!(?message, "voice client: received message");
             },
             entry = shard.next_event(EventTypeFlags::all()) => {
                 let event = match entry {
@@ -112,18 +101,19 @@ async fn main() -> Result<()> {
                     client = info.build_optional().map(VoiceClient::new);
                     if client.is_some() {
                         info!("voice client: received all parameters, connecting...");
+                        info = info.clear();
                     }
-                    info = info.clear();
                 }
             }
         }
     }
 
     // so twilight can process something closing the connection.
-    _ = timeout(Duration::from_secs(3), shard.next());
+    _ = timeout(Duration::from_secs(3), shard.next()).await;
 
+    // same as well with gramophone...
     if let Some(client) = client.as_mut() {
-        _ = timeout(Duration::from_secs(3), client.next());
+        _ = timeout(Duration::from_secs(3), client.next()).await;
     }
 
     Ok(())

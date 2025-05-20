@@ -1,7 +1,5 @@
-use gramophone_types::RTP_KEY_LEN;
+use std::fmt::Display;
 use std::str::FromStr;
-
-use crate::crypto::{Aead, Aes256Gcm, XChaCha20Poly1035};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EncryptMode {
@@ -12,23 +10,6 @@ pub enum EncryptMode {
 }
 
 impl EncryptMode {
-    #[must_use]
-    pub fn aead(&self, key: &[u8; RTP_KEY_LEN]) -> Box<dyn Aead> {
-        match self {
-            Self::Aes256Gcm => Box::new(Aes256Gcm::new_sized(key)),
-            Self::XChaCha20Poly1305 => Box::new(XChaCha20Poly1035::new_sized(key)),
-        }
-    }
-
-    /// Gets the required size of a nonce for a particular mode.
-    #[must_use]
-    pub const fn nonce_size(&self) -> usize {
-        match self {
-            Self::Aes256Gcm => 12,
-            Self::XChaCha20Poly1305 => 24,
-        }
-    }
-
     /// Returns the best encryption mode based on the available modes
     /// given from the [ready payload].
     ///
@@ -58,26 +39,45 @@ impl EncryptMode {
         best.map(|v| v.0)
     }
 
+    /// Gets the required size of a nonce for a particular mode.
+    #[must_use]
+    pub const fn nonce_size(&self) -> usize {
+        match self {
+            Self::Aes256Gcm => 12,
+            Self::XChaCha20Poly1305 => 24,
+        }
+    }
+}
+
+impl EncryptMode {
     /// Returns the name of a mode as it will appear during negotiation.
     #[must_use]
-    pub const fn to_request_str(self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Aes256Gcm => "aead_aes256_gcm_rtpsize",
             Self::XChaCha20Poly1305 => "aead_xchacha20_poly1305_rtpsize",
         }
     }
+}
 
+impl EncryptMode {
     /// Returns a local priority score for a given [mode].
     ///
     /// Higher values are more preferred.
     ///
     /// [mode]: EncryptMode
     #[must_use]
-    pub const fn priority(&self) -> u64 {
+    const fn priority(&self) -> u64 {
         match self {
             Self::Aes256Gcm => 1,
             Self::XChaCha20Poly1305 => 0,
         }
+    }
+}
+
+impl Display for EncryptMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
