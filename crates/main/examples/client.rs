@@ -4,8 +4,7 @@ use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
-use gramophone::client::{VoiceClient, VoiceConnectionInfo};
-use gramophone_types::payload::Event;
+use gramophone::client::{Event, VoiceClient, VoiceConnectionInfo};
 
 use twilight_gateway::{CloseFrame, EventTypeFlags, Intents, Shard, ShardId, StreamExt as _};
 use twilight_model::gateway::event::Event as GatewayEvent;
@@ -62,7 +61,6 @@ async fn main() -> Result<()> {
 
                 match &event {
                     Event::Connected(..) => {
-                        let transport = client.as_mut().expect("unexpected logic").transport();
                         info!("voice client: ready to transmit voice data!");
                     },
                     _ => {

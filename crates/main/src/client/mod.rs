@@ -7,6 +7,7 @@ pub mod event;
 pub mod info;
 pub mod message;
 
+pub use self::event::Event;
 pub use self::heartbeater::HeartbeatInfo;
 pub use self::info::VoiceConnectionInfo;
 pub use self::message::Message;
@@ -26,7 +27,7 @@ use tracing::{debug, trace, warn};
 use twilight_model::gateway::CloseFrame;
 use twilight_model::gateway::event::GatewayEventDeserializer;
 
-use crate::crypto::EncryptMode;
+use crate::crypto::{Aead, EncryptMode};
 use crate::udp::error::{VoiceUdpError, VoiceUdpErrorType};
 use crate::udp::ext::DiscordUdpExt;
 use crate::udp::{DiscoverIpResult, VoiceUdp};
@@ -68,9 +69,6 @@ pub struct VoiceClient {
     /// Pending message to be sent to the client.
     pending_message: Option<Message>,
 
-    /// Pending voice transport info to be consumed
-    pending_transport: Option<AudioTransport>,
-
     /// Pending UDP socket waiting to be consumed until the client receives
     /// [`SessionDescription`] event assuming if it does not have any good
     /// previous session.
@@ -101,6 +99,7 @@ pub struct VoiceClient {
 /// both the gateway and the UDP server.
 #[derive(Debug)]
 pub struct AudioTransport {
+    pub aead: Box<dyn Aead>,
     pub ssrc: u32,
     pub udp: VoiceUdp,
 }
@@ -117,31 +116,10 @@ impl VoiceClient {
             info,
             pending: None,
             pending_message: None,
-            pending_transport: None,
             pending_udp: None,
             session: None,
             state: VoiceClientState::Disconnected { attempts: 0 },
             tls_enabled: true,
-        }
-    }
-
-    pub fn transport_checked(&mut self) -> Option<AudioTransport> {
-        if self.state.is_active() {
-            self.pending_transport.take()
-        } else {
-            None
-        }
-    }
-
-    /// # Panics
-    ///
-    /// This function will panic if it has not connected to the voice gateway
-    /// and UDP server successfully or already consumed the [`VoiceServerInfo`] type.
-    pub fn transport(&mut self) -> AudioTransport {
-        assert!(self.state.is_active(), "not connected");
-        match self.pending_transport.take() {
-            Some(n) => n,
-            None => panic!("already consumed audio transport"),
         }
     }
 
@@ -295,15 +273,15 @@ impl VoiceClient {
                 debug!("reconnected to voice UDP server");
 
                 let udp = VoiceUdp::new(socket)?;
-                let server = AudioTransport {
+                let secret_key = session.secret_key.as_ref().expect("unexpected logic");
+                let transport = AudioTransport {
+                    aead: session.mode.encryptor(secret_key),
                     ssrc: session.ssrc,
                     udp,
                 };
 
-                self.pending_transport = Some(server);
                 self.state = VoiceClientState::Active;
-
-                return Poll::Ready(Ok(Some(Message::Connected(true))));
+                return Poll::Ready(Ok(Some(Message::Connected(transport))));
             }
             VoiceClientState::UdpHandshaking if self.future_udp.is_some() => {
                 let future = self.future_udp.as_mut().expect("unexpected logic");
@@ -682,6 +660,7 @@ impl VoiceClient {
                         ),
                     })?;
                 }
+                session.secret_key = Some(event.secret_key);
 
                 if let Some(udp) = self.pending_udp.take() {
                     let udp = VoiceUdp::new(udp).map_err(|source| VoiceClientError {
@@ -690,11 +669,11 @@ impl VoiceClient {
                     })?;
 
                     self.state = VoiceClientState::Active;
-                    self.pending_message = Some(Message::Connected(false));
-                    self.pending_transport = Some(AudioTransport {
+                    self.pending_message = Some(Message::Connected(AudioTransport {
+                        aead: session.mode.encryptor(&event.secret_key),
                         ssrc: session.ssrc,
                         udp,
-                    });
+                    }));
                 } else {
                     warn!("received session description event but self.pending_udp is missing");
                 }

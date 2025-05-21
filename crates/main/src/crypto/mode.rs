@@ -1,12 +1,28 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use super::{Aead, Aes256Gcm, XChaCha20Poly1035};
+use gramophone_types::RTP_KEY_LEN;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EncryptMode {
     /// AEAD `AES256-GCM` (RTP Size) (Preferred)
     Aes256Gcm,
     /// AEAD `XChaCha20` Poly1305 (RTP Size) (Required)
     XChaCha20Poly1305,
+}
+
+impl EncryptMode {
+    /// Generates an [AEAD encryptor] based on the mode from a secret key.
+    ///
+    /// [AEAD encryptor]: Aead
+    #[must_use]
+    pub fn encryptor(&self, key: &[u8; RTP_KEY_LEN]) -> Box<dyn Aead> {
+        match self {
+            Self::Aes256Gcm => Box::new(Aes256Gcm::new_sized(key)),
+            Self::XChaCha20Poly1305 => Box::new(XChaCha20Poly1035::new_sized(key)),
+        }
+    }
 }
 
 impl EncryptMode {

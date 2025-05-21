@@ -1,7 +1,27 @@
 use std::fmt::Debug;
 
+// We're using ring if both aws-lc-rs and ring are configured.
+#[cfg(any(
+    all(feature = "ring", not(feature = "aws_lc_rs")),
+    all(feature = "aws_lc_rs", feature = "ring")
+))]
+extern crate ring;
+
+// Since aws-lc-rs claims to be ring-compatible so we don't need to isolate
+// each of their implementation in designated modules.
+#[cfg(all(feature = "aws_lc_rs", not(feature = "ring")))]
+extern crate aws_lc_rs as ring;
+
+pub mod aes256gcm;
 pub mod mode;
+pub mod xchacha20poly1305;
+
+pub use self::aes256gcm::Aes256Gcm;
 pub use self::mode::EncryptMode;
+pub use self::xchacha20poly1305::XChaCha20Poly1035;
+
+/// Secret key size to encrypt/decrypt voice packets
+pub const AEAD_KEY_LEN: usize = 32;
 
 /// Algoritm-agnostic trait for encrypting and decrypting data,
 /// independent of any specific crypto provider or algorithm.

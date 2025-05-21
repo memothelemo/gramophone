@@ -1,11 +1,13 @@
 use twilight_model::gateway::CloseFrame;
 
-/// Message sent from the connection that can be received with [`VoiceClient`].
+use super::AudioTransport;
+
+/// Message sent from the connection that can be received from [`VoiceClient`].
 ///
 /// [`VoiceClient`]: super::VoiceClient
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Message {
-    Connected(bool),
+    Connected(AudioTransport),
     Close(Option<CloseFrame<'static>>),
     Text(String),
 }
