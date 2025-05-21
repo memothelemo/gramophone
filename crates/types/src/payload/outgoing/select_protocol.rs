@@ -55,7 +55,6 @@ mod builder {
     }
 
     impl<Port, Proto, Mode> SelectProtocolBuilder<(), Port, Proto, Mode> {
-        #[must_use]
         pub fn parse_address(
             self,
             address: impl Into<String>,
@@ -128,6 +127,7 @@ mod builder {
     }
 
     impl SelectProtocolBuilder<WithAddr, WithPort, WithProto, WithMode> {
+        #[allow(clippy::missing_panics_doc)]
         #[must_use]
         pub fn build(self) -> SelectProtocol {
             SelectProtocol {

@@ -167,15 +167,16 @@ mod builder {
         pub fn build_optional(&self) -> Option<VoiceConnectionInfo> {
             Some(VoiceConnectionInfo {
                 endpoint: self.endpoint.clone()?,
-                guild_id: self.guild_id.clone()?,
+                guild_id: self.guild_id?,
                 session_id: self.session_id.clone()?,
                 token: Token::new(self.token.clone()?.into_boxed_str()),
-                user_id: self.user_id.clone()?,
+                user_id: self.user_id?,
             })
         }
     }
 
     impl VoiceConnectionInfoBuilder<WithEndpoint, WithGuildId, WithSessionId, WithToken, WithUserId> {
+        #[allow(clippy::missing_panics_doc, clippy::unwrap_used)]
         #[must_use]
         pub fn build(self) -> VoiceConnectionInfo {
             VoiceConnectionInfo {

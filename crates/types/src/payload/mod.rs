@@ -11,12 +11,17 @@ use serde::de::{DeserializeSeed, IgnoredAny, IntoDeserializer, MapAccess, Unexpe
 use twilight_model::gateway::CloseFrame;
 use twilight_model::gateway::event::GatewayEventDeserializer;
 
+#[allow(clippy::wildcard_imports)]
 use self::incoming::*;
 use crate::OpCode;
 
 /// Any type of event that a voice connection emits.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event {
+    /// Successfully connected to the voice server.
+    ///
+    /// The inner value shows whether it is reconnected.
+    Connected(bool),
     ClientConnect(ClientConnect),
     ClientDisconnect(ClientDisconnect),
     GatewayClosed(Option<CloseFrame<'static>>),

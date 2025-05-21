@@ -67,7 +67,7 @@ impl EncryptMode {
     ///
     /// [mode]: EncryptMode
     #[must_use]
-    const fn priority(&self) -> u64 {
+    const fn priority(self) -> u64 {
         match self {
             Self::Aes256Gcm => 1,
             Self::XChaCha20Poly1305 => 0,

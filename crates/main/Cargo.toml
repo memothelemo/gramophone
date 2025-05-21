@@ -27,12 +27,11 @@ serde.workspace = true
 serde_json.workspace = true
 twilight-model.workspace = true
 
+discortp = { version = "0.6.0", features = ["discord"] }
 flume = "0.11.1"
 tokio = { version = "1.45.0", features = ["macros", "net", "rt", "sync", "time"] }
 futures = "0.3.31"
 tracing = "0.1.41"
-twilight-gateway = "0.16.0"
-discortp = { version = "0.6.0", features = ["discord"] }
 
 [dependencies.ring]
 version = "0.17.14"
@@ -53,6 +52,7 @@ pretty_assertions = "1.4.1"
 tokio = { version = "*", features = ["full"] }
 tracing-tree = "0.4.0"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+twilight-gateway = "0.16.0"
 
 [lints]
 workspace = true

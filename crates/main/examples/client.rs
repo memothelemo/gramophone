@@ -5,6 +5,7 @@ use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
 use gramophone::client::{VoiceClient, VoiceConnectionInfo};
+use gramophone_types::payload::Event;
 
 use twilight_gateway::{CloseFrame, EventTypeFlags, Intents, Shard, ShardId, StreamExt as _};
 use twilight_model::gateway::event::Event as GatewayEvent;
@@ -45,9 +46,9 @@ async fn main() -> Result<()> {
                 shard.close(CloseFrame::NORMAL);
                 break;
             },
-            message = client.as_mut().map(|v| v.next()).optional() => {
-                let message = match message {
-                    Some(Ok(message)) => message,
+            event = client.as_mut().map(|v| v.next_event()).optional() => {
+                let event = match event {
+                    Some(Ok(event)) => event,
                     Some(Err(error)) => {
                         warn!(?error, "voice client: got an error");
                         continue;
@@ -58,7 +59,16 @@ async fn main() -> Result<()> {
                         break;
                     }
                 };
-                info!(?message, "voice client: received message");
+
+                match &event {
+                    Event::Connected(..) => {
+                        let transport = client.as_mut().expect("unexpected logic").transport();
+                        info!("voice client: ready to transmit voice data!");
+                    },
+                    _ => {
+                        info!(?event, "voice client: received event");
+                    }
+                }
             },
             entry = shard.next_event(EventTypeFlags::all()) => {
                 let event = match entry {
@@ -89,7 +99,7 @@ async fn main() -> Result<()> {
                     GatewayEvent::VoiceServerUpdate(data) if data.guild_id == guild_id => {
                         debug!("shard: received voice server update");
 
-                        let endpoint = data.endpoint.as_ref().unwrap().to_string();
+                        let endpoint = data.endpoint.as_ref().expect("endpoint should be defined").to_string();
                         info = info.set_endpoint(endpoint).set_token(data.token.clone());
                     },
                     _ => {

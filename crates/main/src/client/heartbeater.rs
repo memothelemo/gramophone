@@ -104,7 +104,7 @@ pub struct HeartbeatInfo<'a> {
     latencies: Cow<'a, VecDeque<Duration>>,
 }
 
-impl<'a> std::fmt::Debug for HeartbeatInfo<'a> {
+impl std::fmt::Debug for HeartbeatInfo<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HeartbeatInfo")
             .field("samples", &self.latencies.len())
@@ -112,7 +112,7 @@ impl<'a> std::fmt::Debug for HeartbeatInfo<'a> {
     }
 }
 
-impl<'a> HeartbeatInfo<'a> {
+impl HeartbeatInfo<'_> {
     /// It clones the entire list of latencies and returns a static reference of [`HeartbeatInfo`].
     #[must_use]
     pub fn to_owned(&self) -> HeartbeatInfo<'static> {
@@ -141,7 +141,6 @@ impl<'a> HeartbeatInfo<'a> {
     }
 
     /// Gets an iterator of latencies observed by the heartbeater.
-    #[must_use]
     pub fn latencies(&self) -> impl Iterator<Item = &Duration> {
         self.latencies.iter()
     }

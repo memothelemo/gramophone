@@ -31,8 +31,7 @@ impl Display for VoiceClientError {
                     .expect("websocket error should have a source");
 
                 Display::fmt(source, f)
-            }
-            VoiceClientErrorType::UnsupportedMode => f.write_str("unsupported encryption mode"),
+            } // VoiceClientErrorType::UnsupportedMode => f.write_str("unsupported encryption mode"),
         }
     }
 }
@@ -47,9 +46,6 @@ impl Error for VoiceClientError {
 
 #[derive(Debug)]
 pub enum VoiceClientErrorType {
-    /// Found undefined encryption mode.
-    UnsupportedMode,
-
     /// Could not handshake a voice server.
     Handshaking,
 
